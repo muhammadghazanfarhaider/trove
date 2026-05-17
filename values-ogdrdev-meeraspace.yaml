@@ -1,0 +1,98 @@
+sharedConfigmap:
+  enabled: false
+  configurationFiles:
+    policy.xml: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE policymap [
+        <!ELEMENT policymap (policy)+>
+        <!ATTLIST policymap xmlns CDATA FIXED ''>
+        <!ELEMENT policy EMPTY>
+        <!ATTLIST policy xmlns CDATA FIXED '' domain NMTOKEN REQUIRED
+          name NMTOKEN IMPLIED pattern CDATA IMPLIED rights NMTOKEN IMPLIED
+          stealth NMTOKEN IMPLIED value CDATA IMPLIED>
+      ]>
+      <policymap>
+        <policy domain="resource" name="memory" value="2000MiB"/>
+        <policy domain="resource" name="map" value="2000MiB"/>
+        <policy domain="resource" name="area" value="2000MiB"/>
+        <policy domain="delegate" rights="none" pattern="URL" />
+        <policy domain="delegate" rights="none" pattern="HTTPS" />
+        <policy domain="delegate" rights="none" pattern="HTTP" />
+        <policy domain="path" rights="none" pattern="@*"/>
+        <policy domain="coder" rights="none" pattern="PS" />
+        <policy domain="coder" rights="none" pattern="PS2" />
+        <policy domain="coder" rights="none" pattern="PS3" />
+        <policy domain="coder" rights="none" pattern="EPS" />
+        <policy domain="coder" rights="read|write" pattern="PDF" />
+        <policy domain="coder" rights="none" pattern="XPS" />
+      </policymap>
+
+common:
+
+  replicaCount: 1
+  
+  image:
+    #repository: registry.gitlab.com/target-digital-transformation/devops/tespkg/trove-service-seismicmanager
+    #tag: "19563f2c"
+    pullPolicy: IfNotPresent
+    extraEnv:
+      LOGGING_LEVEL: DEBUG
+      REF_CATALOG_LIMIT: 1000
+      FM_MOUNT_PATH: DIGITAL_OGDRPROD/
+      USER_PASSWORD: TTes9tingW
+      USER_EMAIL: admin@example.com
+      DEFAULT_SYSTEM_USER: system.admin@wellsandseismic.com
+      DEFAULT_SYSTEM_PASS: fl4gxrgtbxtzdUaQz8xvhA==
+      NFS: nfs
+      S3: s3
+      MSSQL_SERVER: jdbc:sqlserver://mssql-mssql-linux.dev-meeraspace-mssql:1433;DatabaseName=wasl_geo_44
+      MSSQL_SERVER_USER_NAME: sa
+      MSSQL_SERVER_PASSWORD: Tes9ting
+      EXTERNAL_PATH: /data1/wsxstreamline_ogdr_demo
+      #CLIENT_SCOPE: openid offline_access
+      CLIENT_ID: meera-dx
+      LOGS_DIR: /DIGITAL_OGDRPROD/was-service-logs/trove-api/
+      #SHOPPING_CART_TO_EXCLUDE: seisSection3D,line3D,seisMatch
+      EXPORT_CHUNK_SIZE: 1500
+      CART_OFFSET_LIMIT: 4000
+      BUFFER_SIZE_MB: 100
+      FEEDBACK_SURVEY_ID: 10
+      FEEDBACK_QUESTION_ID: 137
+      FEEDBACK_OPERATOR_QUESTION_ID: 138
+      WAS_PERMIT_CHECK: "false"
+      SHOPPING_CART_TO_EXCLUDE: seisSection3D,line3D,segment3d,seisMatch,seisSegmentPoint,curveExport
+      
+
+    extraENVRulehandled:
+      CORS_HOSTS: "*"                     
+      REDIS_HOST: redis-stack-server.$nsPrefix-redis-wasl
+      POSTGRES_SERVER: jdbc:postgresql://postgres.dev-meeraspace-postgres:5432/wasl_was
+      WORKFLOW_URL: http://workflow-engine:9095/
+      #SSO: http://sso-be.$nsPrefix-sso:5556
+      #FEEDBACK_SERVICE: http://geo-survey-be.mem-ogdrtest-map:8015/ 
+
+  volumeMounts:
+    ## If true,  Pod volumes to mount into the container's filesystem
+    enabled: true
+    volumeMounts:
+      - name: trove-api-nfs-storage
+        mountPath: /DIGITAL_OGDRPROD
+
+  volumes:
+    useconfigmap:
+      enabled: true
+    volumes:
+      - name: trove-api-nfs-storage
+        nfs:
+          server: 182.191.121.189
+          path: /data/nfs-server/ogdrdev-meeraspace/ogdrdev-meeraspace-wasl
+          
+  #nodeSelector:
+   # lifecycle: wasl1           
+      
+  tolerations:
+    - key: wasl1
+      operator: Equal
+      value: "true"
+      effect: NoSchedule          
+

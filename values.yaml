@@ -1,0 +1,259 @@
+global:
+  nsPrefix: dev-meeraspace
+  baseUrl: dev.meeraspace.com
+  gateway: default/gateway
+  hostPrefix:
+  hostSuffix:
+  imageRegistryOverride:
+servicemonitor:
+  enabled: false
+  matchReleaseName:
+  endpoints:
+    - port: metrics
+      path: /_metrics
+  namespaceSelector:
+    matchNames:
+      - $nsPrefix-CHANGEME
+  selector:
+    matchLabels:
+      app: CHANGEME_APPNAME
+istio:
+  virtualservice:
+    enabled: false
+    host: CHANGME1
+    extra_host:
+    http:
+      - match:
+          - uri:
+              prefix: /CHANGEME
+        route:
+          - destination:
+              host: CHANGEME
+              port:
+                number: CHANGEME
+  virtualserviceGrpcMtls:
+    enabled: false
+  virtualserviceGrpc:
+    enabled: false
+  envoyfilter:
+    enabled: false
+sharedConfigmap:
+  enabled: false
+  configurationEnv:
+    cm-key-1: cm-value-1
+    KEY1: configurationEnv-VALUE1
+  mtlsCredential: []
+  # domain as path 
+  # example: Files/grpc-mtls.fluxble.com/ca-chain.cert.pem
+  # then: place domain name into the list:
+  # - grpc-mtls.fluxble.com
+  configurationFiles:
+    # note: if a key ends with .yaml, don't add '|'
+    config.yaml:
+      key: type your config here
+    ca-chain.cert.pem: |
+      skjawjihjsauireklfsaiohddaksl
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+common:
+  enabled: true
+  nameOverride: trove-api
+  envs:
+    enabled: false
+  istio:
+    virtualservice:
+      enabled: true
+      host: apis
+      extra_host: was.ogdrdev.meeraspace.com
+      http:
+        - corsPolicy:
+            allowCredentials: true
+            allowHeaders:
+              - keep-alive
+              - user-agent
+              - cache-control
+              - content-type
+              - content-transfer-encoding
+              - x-accept-content-transfer-encoding
+              - x-accept-response-streaming
+              - x-user-agent
+              - x-grpc-web
+              - grpc-timeout
+              - authorization
+              - organizationid
+              - x-use-crm-be4fe-as
+              - x-upload-mode
+              - x-org-id
+            allowMethods:
+              - POST
+              - GET
+              - OPTIONS
+              - PUT
+              - DELETE
+              - PATCH
+            allowOrigins:
+              - exact: https://localhost:8000
+              - exact: http://localhost:8000
+              - exact: https://was.ogdrdev.meeraspace.com
+              - exact: https://wasl.ogdrdev.meeraspace.com
+            exposeHeaders:
+              - grpc-status
+              - grpc-message
+              - content-disposition
+            maxAge: 1728s
+          match:
+            - uri:
+                prefix: /service
+            - uri:
+                prefix: /service/
+            - uri:
+                prefix: /export
+            - uri:
+                prefix: /trove/api
+            - uri:
+                prefix: /app/api
+            - uri:
+                prefix: /troveapi
+            - uri:
+                prefix: /troveapi/
+          route:
+            - destination:
+                host: trove-api
+                port:
+                  number: 8070
+  replicaCount: 1
+  image:
+    #image Registry priority order is common.image.imageRegistryOverride > global.imageRegistryOverride > common.image.repository
+    imageRegistryOverride:
+    #image name priority order is global.imageRegistryForceOverride > comon.image.imageRegistry > global.imageRegistry > comon.image.repository
+    # imageRegistry: registry.gitlab.com
+    repository: registry.gitlab.com/target-digital-transformation/devops/tespkg/trove-api
+    tag: "72b6e79a"
+    pullPolicy: IfNotPresent
+    # pullPolicy: Always
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    # - name: metrics
+    #   containerPort: 7070
+    #   protocol: TCP
+    # - name: http2
+    #   containerPort: LISTEN_PORT
+    #   protocol: TCP
+    # - name: metrics
+    #   containerPort: 7070
+    #   protocol: TCP
+    extraCommand: []
+    # - arg1
+    # - arg2
+
+    ## Parameters applied to a particular environment
+    optionalCommand: []
+    ## Predefined global variables `comfigmap-envvars.yaml`，import the container by envFrom: - configMapRef:
+    envFromConfigMap:
+      enabled: false
+    ## ExtraEnv has the highest priority when there are multiple repeating envs
+    extraEnv:
+      FM_MOUNT_PATH: mnt/
+      GRPC_PORT: "7001"
+      LOGGING_LEVEL: ERROR
+      NFS: nfs
+      S3: s3
+      MINIO_ACCESS_KEY: minio_access
+      MINIO_SECRET_KEY: Tes9ting
+      #POSTGRES_SERVER_PASSWORD: postgres
+      #POSTGRES_SERVER_USER_NAME: postgres
+      DEFAULT_SYSTEM_USER: system.admin@wellsandseismic.com
+      DEFAULT_SYSTEM_PASS: wsghZ00Jbr6uiS383zcqkw==
+      LOGS_DIR: /mnt/logs/trove-api/
+      JAVA_OPTS: -XX:+UseStringDeduplication -Xms1G -Xmx6G
+    ## Parameters applied to a particular environment
+    #optionalEnv:
+    #  ENVA_PUBLISH: "envs-key=SVC.${MY_POD_NAMESPACE}:port"
+
+    extraENVRulehandled:
+      #ENVS_HTTP_ADDR: envs.$nsPrefix-envs:9112
+      CORS_HOSTS: $baseUrl, *.$baseUrl, *.test.meeraspace.com, https://localhost:8000, http://localhost:8000, was.$baseUrl, apis.$baseUrl
+      FILE_MANAGER: https://api.$baseUrl/fm
+      FILE_MANAGER_LOCAL: http://filemanager.$nsPrefix-filemanager:9200
+      GRPC_AC_HOST: dns:///accesscontrol-be.$nsPrefix-accesscontrol:7001
+      GRPC_HOST: accesscontrol-be.$nsPrefix-accesscontrol
+      CFG_GRPC_HOST: configurator-be.$nsPrefix-configurator
+      GRPC_LM_HOST: license.$nsPrefix-license
+      MINIO_URL: http://minio.$nsPrefix-minio:9000
+      #POSTGRES_SERVER: jdbc:postgresql://postgres.$nsPrefix-postgres:5432/wasl_was
+      PROXY_URL: https://was.$baseUrl:8001
+      SSO: https://sso.$baseUrl
+      REDIS_HOST: redis-master.$nsPrefix-redis
+      RMQ_HOST: rabbitmq.$nsPrefix-rabbitmq
+  service:
+    type: ClusterIP
+    ports:
+      - port: 8070
+        name: http
+        targetPort: 8080
+        # - port: 7070
+        #   name: metrics
+        #   targetPort: 7070
+  volumeMounts:
+    ## If true,  Pod volumes to mount into the container's filesystem
+    enabled: true
+    volumeMounts:
+      - name: trove-api-nfs-storage
+        mountPath: /mnt
+      - name: trove-api-server-files-nfs-storage
+        mountPath: /mnt/server-files
+        # - name: configmap
+        #   mountPath: /usr/local/config
+        # - name: configmap
+        #   mountPath: /along
+        #   subPath: config.yaml
+        # - name: configmap
+        #   mountPath: /along2
+        #   subPath: ca-chain.cert.pem
+  volumes:
+    useconfigmap:
+      enabled: false
+    volumes:
+      - name: trove-api-nfs-storage
+        nfs:
+          server: 182.191.121.189
+          path: /data/nfs-server/dev-meeraspace/dev-meeraspace-wasl
+      - name: trove-api-server-files-nfs-storage
+        nfs:
+          server: 182.191.121.189
+          path: /data/nfs-server/dev-meeraspace/dev-meeraspace-wasl/server-files
+          #- name: trove-api-nfs-storage
+          #  nfs:
+          #    server: 10.128.15.203
+          #    path: /mnt/target-dev-nfs
+          #- name: trove-api-server-files-nfs-storage
+          #  nfs:
+          #    server: 10.128.15.203
+          #    path: /mnt/target-dev-nfs/server-files
+          # - name: datadir
+          #   emptyDir: {}
+          #   volumes:
+          # - name: data
+          #   persistentVolumeClaim:
+          #     claimName: reach-nominatim-pvc
+  livenessProbe:
+  readinessProbe:
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1000Mi
+    limits:
+      cpu: 3000m
+      memory: 8000Mi
+  ##  ref https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/
+  priorityClassName:
+  tolerations:
+    - key: wasl1
+      operator: Equal
+      value: "true"
+      effect: NoExecute
