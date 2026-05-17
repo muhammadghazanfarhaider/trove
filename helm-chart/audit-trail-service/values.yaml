@@ -1,0 +1,172 @@
+## set up the DependenciesSvcName, base on requirements.yaml
+DependenciesSvcName:
+  ## If false, DependenciesSvc will not be installed
+  ## If true, DependenciesSvc will  be installed, and then exec ` helm dependency update . `
+  # enabled: true
+  enabled: false
+  
+#fullnameOverride: studiomanager
+##  we define "APP.fullname" = .Values.fullnameOverride  in file  <./templates/_helpers.tpl>
+##  This will be applied to the deployment, service, ingress and other template files
+##  kind: Deployment
+##  metadata:
+##   name: {{ template "APP.fullname" . }}
+
+replicaCount: 1
+
+image:
+  repository: registry.gitlab.com/target-digital-transformation/audit-trail-service/tp-drop-1-1-20190511
+  tag: e4645623
+  #pullPolicy: Always
+  pullPolicy: IfNotPresent
+  ports:
+  - name: audit-trail
+    containerPort: 8080
+    protocol: TCP
+  ## If you have multiple groups of ports, uncomment the following
+  #- name: CHANGEME
+  #  containerPort: CHANGEME
+  #  protocol: CHANGEME
+  #- name: CHANGEME
+  #  containerPort: CHANGEME
+  #  protocol: CHANGEME
+
+  extraCommand: {}
+  ## If you do want to specify extraCommand, uncomment the following
+  #- dex
+  #- server
+  #- /config.yaml
+
+  extraEnv:
+  ##  If you do want to specify ENV, uncomment the following
+  ##  If the helm template cannot resolve the environment variable values correctly, you can add the environment variables directly to the deployment.file
+    
+    DATA_STORE_DRIVER: InternalText
+    DATA_STORE_DRIVER_URL: http://elasticsearch-master.dev-meeraspace-elasticsearch-v730:9200/
+    DATA_STORE_ENTITY_NAME: audit-trail
+    RMQ_HOST: rabbitmq.dev-meeraspace-rabbitmq
+    SERVICE_COMMIT_NO: 30.11.20
+ 
+imagePullSecret:
+## exist If true, secret-registry.gitlab.com.yaml will not be installed
+  exist: false
+  enabled: true
+  values:
+    ## secret obtained for "Files" directory named registrySerect.txt
+    ## Format of secret file: {tag name}: {encoded secret string}
+    name: "registry.gitlab.com"
+    type: "kubernetes.io/dockercfg"
+
+service:
+  type: ClusterIP
+  ports:
+  - port: 8091
+    name: audit-trail
+    ## If you want to use the service in ingress， we defined `servicePort: http` at ingress.yaml, so don't change the ports.name
+    targetPort: 8080
+  ## If you have multiple groups of service, uncomment the following
+  #- port: CHANGEME
+  #  name: CHANGEME
+  #  targetPort: CHANGEME
+
+ingress:
+  enabled: false
+  # annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - test.meeraspace.com
+  tls:
+   - secretName: meeraspace
+     hosts:
+       - test.meeraspace.com
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #limits:
+  # cpu: 100m
+  # memory: 128Mi
+  #requests:
+  # cpu: 100m
+  # memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+volumeMounts:
+## If true,  Pod volumes to mount into the container's filesystem
+  enabled: false
+  #enabled: true
+  volumeMounts: 
+  - name: CHANGEME
+    mountPath: CHANGEME
+    #subpath: CHANGEME
+  #- name: CHANGEME
+    #mountPath: CHANGEME
+    #subpath: CHANGEME
+    
+persistentVolumeClaim:
+  ## If true,  will create/use a Persistent Volume Claim
+  enabled: false
+  #enabled: true
+
+  name: CHANGEME
+
+  ## supported values: "ReadOnlyMany", "ReadWriteMany", "ReadWriteOnce"  
+  accessModes:
+    - ReadWriteOnce
+  
+  annotations: {}
+  ##
+  ## If you want to reuse an existing claim, you can pass the name of the PVC using
+  ## the existingClaim variable
+  #existingClaim: "your-claim"
+
+  size: 4Gi
+
+  storageClass: "standard"
+  
+volumes:
+## If true, will create/use a Volume, configmap nfs hostPath emptyDir 
+  enabled: false
+  #enabled: true
+
+## `name: {{ template "APP.fullname" . }}-config`
+  configmap:
+    enabled: true
+
+  volumes:
+  #- name: CHANGEME
+  #  persistentVolumeClaim:
+  #    claimName: CHANGEME
+  #- name: CHANGEME
+  #  nfs:
+  #    server: CHANGEME
+  #    path: CHANGEME
+  #- name: CHANGEME
+  #  hostPath:
+  #    path: CHANGEME
+  #    type: DirectoryOrCreate
+  #- name: CHANGEME
+  #  emptyDir: {}
+  
+configmap:
+  enabled: false
+  #enabled: true
+
+  configurationFiles: {}
+    #dex-config: |
+    #  issuer: https://sso.digitalenergycloud.com
+
+  configurationEnv: {}
+    #cache_host: memcached-gcxt

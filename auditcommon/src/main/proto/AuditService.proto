@@ -1,0 +1,76 @@
+syntax  = "proto3";
+
+import "google/protobuf/descriptor.proto";
+
+option java_multiple_files = true;
+package com.target.audit.grpc;
+
+extend google.protobuf.EnumValueOptions {
+    string typeName= 50000;
+    string label= 50001;
+}
+
+
+enum FieldType {
+    STRING = 0 [(typeName) = "string", (label) = 'String'];
+    FILE = 1 [(typeName) = "file", (label) = 'File'];
+    IMAGE = 2 [(typeName) = "image", (label) = 'Image'];
+    INTEGER = 3 [(typeName) = "integer", (label) = 'Integer'];
+    DOUBLE = 4 [(typeName) = "double", (label) = 'Double'];
+    FLOAT = 5 [(typeName) = "float", (label) = 'Float'];
+    BOOLEAN = 6 [(typeName) = "boolean", (label) = 'Boolean'];
+    LONG = 7 [(typeName) = "long", (label) = 'Long'];
+    BIG_DECIMAL = 8 [(typeName) = "big_decimal", (label) = 'Big Decimal'];
+    DATE = 9 [(typeName) = "date", (label) = 'Date'];
+    TIME = 10 [(typeName) = "time", (label) = 'Time'];
+    DATETIME = 11 [(typeName) = "dateTime", (label) = 'DateTime'];
+    TIMESTAMP = 12 [(typeName) = "timestamp", (label) = 'Timestamp'];
+    LINESTRING = 13 [(typeName) = "linestring", (label) = 'Line String (read only)'];
+    GEOMETRY = 14 [(typeName) = "geometry", (label) = 'Geometry (read only)'];
+    POINT = 15 [(typeName) = "point", (label) = 'Point (read only)'];
+    MULTIPOINT = 16 [(typeName) = "multipoint", (label) = 'Multi-point (read only)'];
+    LINE = 17 [(typeName) = "line", (label) = 'Line (read only)'];
+    POLYGON = 18 [(typeName) = "polygon", (label) = 'Polygon (read only)'];
+    MULTIPOLYGON = 19 [(typeName) = "multipolygon", (label) = 'Multi-polygon (read only)'];
+    COLOR = 20 [(typeName) = "colour", (label) = 'Colour (read only)'];
+    UNIT = 21 [(typeName) = "unit", (label) = 'Unit (read only)'];
+    COORDINATE_REFERENCE_SYSTEM = 22 [(typeName) = "coordinatereferencesystem", (label) = 'CRS (read only)'];
+    DATAKEY = 23 [(typeName) = "datakey", (label) = 'DataKey'];
+    TEXT = 24 [(typeName) = "text", (label) = 'Text'];
+    SHORT_INT = 25 [(typeName) = "short", (label) = 'Short Integer'];
+    FILE_SELECTION = 26 [(typeName) = "file_selection", (label) = 'File Selection'];
+    PASSWORD = 27 [(typeName) = "password", (label) = 'Password'];
+
+}
+
+message AuditDataItem {
+    string fieldName = 1;
+    repeated FieldType fieldType = 2;
+    string value = 3;       // TODO : change value type to Object instead of string
+}
+
+message AuditRequest {
+    string username = 1;
+    string source = 2;
+    enum DataEvent {	// TODO : add more enum values as required
+        created = 0;
+        updated = 1;
+        deleted = 2;
+        filedownloaded = 3;
+    }
+    repeated DataEvent dataEvent = 3;
+    string entity = 4;
+    string datakey = 5;
+    string changed = 6;     // TODO: update type of this field to Date instead of string
+    repeated AuditDataItem auditDataItems = 7;
+    string usersubject = 8;
+}
+
+message AuditResponse {
+    string status = 1;
+    string message = 2;
+}
+
+service AuditService {
+    rpc audit(AuditRequest) returns (AuditResponse);
+}

@@ -1,0 +1,105 @@
+import groovy.json.*
+
+def writeDownstreamParameters(Map data) {
+  def json = JsonOutput.toJson(data)
+  writeFile file: "outputs.json", text: JsonOutput.prettyPrint(json)
+  archiveArtifacts artifacts: "outputs.json"
+}
+
+def slackMessage(String status) { 
+  def commitLog = sh(returnStdout: true, script: "git log -n 1").trim()
+  return "<${env.BUILD_URL}|${env.JOB_NAME} #${env.BUILD_NUMBER}> *" + status + "*\n```${commitLog}```"
+}
+
+def commitHash() {
+  return sh(returnStdout: true, script: "git log -n 1 --pretty=format:%h").trim()
+}
+
+def imageId(String image) {
+  return sh(returnStdout: true, script: "docker images -q ${image}").trim()
+}
+
+def image = ''
+def images = []
+
+pipeline {
+  agent any
+  environment {
+    ECR = "262144522045.dkr.ecr.us-east-1.amazonaws.com"
+  }
+  stages {
+    /* Not required when using "Pipeline script from SCM"
+    stage("checkout") {
+      steps {
+        script {
+          git url: "https://gitlab.com/target-digital-transformation/audit-trail-service.git", branch: "develop", credentialsId: "gitlab-meera-dx"
+        }
+      }
+    }*/
+    stage("maven build") {
+      steps {
+        script {
+          docker.image("maven:3-jdk-8").inside() {
+		    sh "mvn -s settings.xml dependency:purge-local-repository"
+            sh "unset MAVEN_CONFIG; chmod 777 ./mvnw; mvn install -s settings.xml -DskipTests dockerfile:build"
+          }
+          sh "docker tag com.target/audit-trail-service meera/audit-trail-service"
+          sh "docker rmi com.target/audit-trail-service"
+          image = docker.image("meera/audit-trail-service")
+          images << imageId(image.imageName())
+        }
+      }
+    }
+    stage("docker push") {
+      steps {
+        script {
+          def tag = commitHash()
+          docker.withRegistry("https://${ECR}", "ecr:us-east-1:demo-ecr-credentials") {
+            image.push("jenkins-${env.BUILD_NUMBER}")
+            image.push(tag)
+            image.push("latest")
+          }
+          writeDownstreamParameters audit_trail_service: "meera/audit-trail-service:${tag}"
+        }
+      }
+    }
+  }
+  post {
+    always {
+      script {
+        sh "rm -f /var/jenkins_home/.dockercfg"
+        images.each {
+          sh "docker rmi -f ${it}"
+        }
+      }
+    }
+    success {
+      script {
+        if (env.SLACK_MESSAGE && env.SLACK_MESSAGE.toBoolean()) {
+          slackSend color: "good", message: slackMessage("SUCCESS")
+        }
+      }
+    }
+    unstable {
+      script {
+        if (env.SLACK_MESSAGE && env.SLACK_MESSAGE.toBoolean()) {
+          slackSend color: "warning", message: slackMessage("UNSTABLE")
+        }
+      }
+    }
+    failure {
+      script {
+        if (env.SLACK_MESSAGE && env.SLACK_MESSAGE.toBoolean()) {
+          slackSend color: "danger", message: slackMessage("FAILURE")
+        }
+      }
+    }
+    aborted {
+      script {
+        if (env.SLACK_MESSAGE && env.SLACK_MESSAGE.toBoolean()) {
+          slackSend color: "#AAAAAA", message: slackMessage("ABORTED")
+        }
+      }
+    }
+  }
+}

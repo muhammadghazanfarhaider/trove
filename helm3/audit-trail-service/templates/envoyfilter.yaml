@@ -1,0 +1,22 @@
+{{- if .Values.istio.envoyfilter.enabled }}
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: {{ template "APP.name" . }}
+spec:
+  workloadLabels:
+    app: {{ template "APP.name" . }}
+    env: {{ .Values.global.nsPrefix }}
+  filters:
+  - filterName: envoy.lua
+    filterType: HTTP
+    filterConfig:
+      inlineCode: |
+        function envoy_on_request(request_handle)
+          request_handle:headers():replace("x-forwarded-proto", "https")
+          request_handle:headers():replace("x-forwarded-host", "api.{{ .Values.global.baseUrl }}/fm")
+          request_handle:headers():replace("x-forwarded-for", "https://api.{{ .Values.global.baseUrl }}/fm")
+        end
+        function envoy_on_response(response_handle)
+        end
+{{- end -}}

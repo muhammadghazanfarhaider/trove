@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "APP.name" . }}
+  labels:
+    app: {{ template "APP.name" . }}
+    version: {{ template "APP.version" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ template "APP.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "APP.name" . }}
+        release: {{ .Release.Name }}
+        version: {{ template "APP.version" . }}
+        env: {{ .Values.global.nsPrefix }}
+    spec:
+      imagePullSecrets:
+      - name: {{ template "APP.name" . }}-gitlabregistrykey
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+  {{- $baseUrl := .Values.global.baseUrl -}}
+  {{- $nsPrefix := .Values.global.nsPrefix -}}
+          {{- range $key, $value := .Values.image.extraENVRulehandled }}
+          - name: {{ $key }}
+            value: {{ printf $value | replace "$baseUrl" $baseUrl | replace "$nsPrefix" $nsPrefix | quote }}
+          {{- end }}
+          {{- range $key, $value := .Values.image.extraENVRulehandled2 }}
+          - name: {{ $key }}
+            value: {{ printf $value | replace "-" "," }}
+          {{- end }}
+          {{- range $key, $value := .Values.image.extraEnv }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+          {{- if .Values.envs.enabled }}
+          args:
+          {{- else }}
+          command:
+          {{- end }}
+          {{- range $key, $value := .Values.image.extraCommand }}
+          - {{ $value }}
+          {{- end }}
+          ports:
+{{ toYaml .Values.image.ports | indent 10 }}
+{{- if  .Values.volumeMounts.enabled }}
+          volumeMounts:
+{{ toYaml .Values.volumeMounts.volumeMounts | indent 12 }}  
+{{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}  
+          livenessProbe:
+{{ toYaml .Values.livenessProbe | indent 12 }}
+          readinessProbe:
+{{ toYaml .Values.readinessProbe | indent 12 }}
+{{- if .Values.volumeMounts.enabled }}
+      volumes:
+{{- if .Values.volumes.configmap.enabled }}
+      - name: configmap
+        configMap:
+          name: {{ template "APP.fullname" . }}-config
+{{- end }}
+{{- if .Values.volumes.volumes }}
+{{ toYaml .Values.volumes.volumes | indent 6 }}
+{{- end }}   
+{{- end }}   
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriod }}
