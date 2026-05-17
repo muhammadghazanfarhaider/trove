@@ -1,5 +1,0 @@
-# dependencies:
-#   - name: DependenciesSvcName
-#     version: CHANGEME
-#     repository: CHANGEME
-#     condition: DependenciesSvcName.enabled

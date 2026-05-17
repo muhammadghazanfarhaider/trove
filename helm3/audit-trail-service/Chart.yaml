@@ -1,7 +1,0 @@
-apiVersion: v2
-appVersion: 30.11.20
-description: A Helm chart for audit-trail-service
-keywords:
-- audit-trail-service
-name: audit-trail-service
-version: 30.11.20
